@@ -7,7 +7,7 @@ services:
     startCommand: 
       - python app.py
     preDeployCommand: 
-      - flask db upgrade
+      - python migrate.py
     envVars:
       - key: FLASK_ENV
         value: production
