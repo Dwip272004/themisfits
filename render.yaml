@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: misfits-app
+    env: python
+    buildCommand: 
+      - pip install -r requirements.txt
+    startCommand: 
+      - python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: 'iamdwip'
+      - key: UPLOAD_FOLDER
+        value: 'uploads'
+      - key: DATABASE_URL
+        value: 'sqlite:///misfits.db'
+    staticPublishPath: static
+    autoDeploy: true
+    disk:
+      - mountPath: /persistent/uploads
+        sizeGB: 1

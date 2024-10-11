@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Include jQuery -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9; /* Light background color for better contrast */
+            margin: 0;
+            padding: 20px; /* Add some padding around the content */
+        }
+        h1 {
+            text-align: center; /* Center the title */
+            color: #333; /* Darker color for the title */
+        }
+        .posts {
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Arrange posts vertically */
+            align-items: center; /* Center posts */
+        }
+        .post {
+            background-color: #fff; /* White background for each post */
+            border: 1px solid #ddd; /* Light border */
+            border-radius: 8px; /* Rounded corners */
+            padding: 15px; /* Padding inside each post */
+            margin: 10px; /* Space between posts */
+            width: 100%; /* Full width for better responsiveness */
+            max-width: 500px; /* Limit max width to avoid large posts */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+        }
+        .post img {
+            max-width: 100%; /* Make images responsive */
+            height: auto; /* Maintain aspect ratio */
+            border-radius: 5px; /* Rounded corners for images */
+        }
+        .post-actions {
+            display: flex; /* Use flexbox for button layout */
+            justify-content: space-between; /* Space buttons apart */
+            align-items: center; /* Center buttons vertically */
+            margin-top: 10px; /* Space above buttons */
+        }
+        .footer {
+            text-align: center; /* Center footer links */
+            margin-top: 20px; /* Space above footer */
+        }
+        .footer a {
+            margin: 0 10px; /* Space between footer links */
+            text-decoration: none; /* Remove underline */
+            color: #007BFF; /* Bootstrap primary color for links */
+        }
+        .footer a:hover {
+            text-decoration: underline; /* Underline on hover */
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Misfits</h1>
+    <div class="posts">
+        {% for post in posts %}
+            <div class="post" id="post-{{ post.id }}">
+                <p>{{ post.content }}</p>
+                {% if post.image %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ post.image) }}" alt="Post Image">
+                {% endif %}
+                <div class="post-actions">
+                    <button class="like-button" data-id="{{ post.id }}">Like</button>
+                    <button class="unlike-button" data-id="{{ post.id }}">Unlike</button>
+                    <p class="likes-count">{{ post.likes_count }} Likes</p>
+                </div>
+            </div>
+        {% else %}
+            <p>No posts available.</p>
+        {% endfor %}
+    </div>
+    <footer class="footer">
+        <a href="{{ url_for('chat') }}">Chat</a>
+        <a href="{{ url_for('find_friend') }}">Find a Friend</a>
+        <a href="{{ url_for('notifications') }}">Notifications</a>
+        <a href="{{ url_for('profile', user_id=current_user.id) }}">Profile</a>
+    </footer>
+
+    <script>
+        $(document).ready(function() {
+            // Like button click event
+            $('.like-button').click(function() {
+                const postId = $(this).data('id');
+                $.post(`/like_post/${postId}`, function(data) {
+                    // Update the likes count based on the response
+                    $(`#post-${postId} .likes-count`).text(data.likes_count + ' Likes');
+                }).fail(function(xhr) {
+                    const errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Error liking the post.';
+                    alert(errorMessage);
+                });
+            });
+
+            // Unlike button click event
+            $('.unlike-button').click(function() {
+                const postId = $(this).data('id');
+                $.post(`/unlike_post/${postId}`, function(data) {
+                    // Update the likes count based on the response
+                    $(`#post-${postId} .likes-count`).text(data.likes_count + ' Likes');
+                }).fail(function(xhr) {
+                    const errorMessage = xhr.responseJSON ? xhr.responseJSON.message : 'Error unliking the post.';
+                    alert(errorMessage);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

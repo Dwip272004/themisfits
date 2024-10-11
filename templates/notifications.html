@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+        setInterval(function() {
+            $.get('/notifications', function(data) {
+                $('#notification-list').html(data);  // Update the notification list with new data
+            });
+        }, 5000);  // Check every 5 seconds
+    </script>
+</head>
+
+<body>
+    <h1>Notifications</h1>
+    <ul id="notification-list">
+        {% for notification, post in notifications %}
+            <li>
+                {{ notification.content }} 
+                {% if post %}
+                    - <a href="{{ url_for('post_detail', post_id=post.id) }}">{{ post.title }}</a>
+                {% else %}
+                   
+                {% endif %}
+                - {{ notification.timestamp }}
+            </li>
+        {% else %}
+            <li>No new notifications.</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

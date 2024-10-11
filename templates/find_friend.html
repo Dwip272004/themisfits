@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Find a Friend</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Find a Friend</h1>
+    <form action="{{ url_for('find_friend') }}" method="GET">
+        <input type="text" name="search" placeholder="Enter username" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <h2>Search Results</h2>
+    {% if results %}
+        <ul>
+            {% for friend in results %}
+                <li>
+                    <!-- Link to the friend's profile -->
+                    <p><a href="{{ url_for('profile', user_id=friend.id) }}">{{ friend.username }}</a></p>
+                    <a href="{{ url_for('send_friend_request', user_id=friend.id) }}">Send Friend Request</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No users found.</p>
+    {% endif %}
+</body>
+</html>

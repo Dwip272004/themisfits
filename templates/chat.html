@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 24px;
+        }
+        .chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+        }
+        .chat-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .chat-entry strong {
+            color: #333;
+        }
+        .chat-entry p {
+            margin: 5px 0 0;
+        }
+        .chat-form {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+        }
+        select, input[type="text"], button {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+        }
+        select {
+            width: 30%;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Mobile Responsiveness */
+        @media screen and (max-width: 768px) {
+            .chat-form {
+                flex-direction: column;
+            }
+            select, input[type="text"], button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            input[type="text"] {
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat</h1>
+    
+    <!-- Chat History Section -->
+    <div class="chat-history">
+        {% for chat in chats %}
+            <div class="chat-entry">
+                <p><strong>{{ chat.sender.username }}:</strong> {{ chat.message }}</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Chat Form Section -->
+    <form class="chat-form" action="{{ url_for('send_message') }}" method="POST">
+        <select name="receiver_id" required>
+            <option value="">Select a user</option>
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="message" placeholder="Type a message" required>
+        <button type="submit">Send</button>
+    </form>
+
+    <script>
+        // Automatically scroll to the bottom of the chat history
+        const chatHistory = document.querySelector('.chat-history');
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    </script>
+</body>
+</html>

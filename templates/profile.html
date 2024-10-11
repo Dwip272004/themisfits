@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ user.username }}'s Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Centering content horizontally and vertically */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        /* Container for the profile */
+        .profile-container {
+            text-align: center;
+            width: 50%;
+            max-width: 600px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Profile image styling */
+        .profile-info img {
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        /* Posts styling */
+        .posts {
+            margin-top: 20px;
+        }
+
+        .post {
+            background-color: #f0f0f0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .post img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Button styling */
+        .delete-button, a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .delete-button:hover, a:hover {
+            background-color: #e60000;
+        }
+
+        /* Additional styling for navigation buttons */
+        .nav-buttons {
+            margin-top: 20px;
+        }
+
+        .nav-buttons a {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <h1>{{ user.username }}'s Profile</h1>
+        <div class="profile-info">
+            <img src="{{ url_for('static', filename='uploads/profile_pics/' + (user.profile_pic if user.profile_pic else 'default.png')) }}" alt="Profile Picture" width="150">
+            <p>Bio: {{ user.bio }}</p>
+            <p>Followers: {{ user.followers_count }}</p>
+        </div>
+        
+        <h2>Your Posts</h2>
+        <div class="posts">
+            {% if posts %}
+                {% for post in posts %}
+                    <div class="post" id="post-{{ post.id }}">
+                        <p>{{ post.content }}</p>
+                        {% if post.image %}
+                            <img src="{{ url_for('static', filename='uploads/' + post.image) }}" alt="Post Image">
+                        {% endif %}
+                        <p>{{ post.likes_count }} Likes</p>
+
+                        {% if is_own_profile %}  <!-- Show delete button only for own posts -->
+                            <button class="delete-button" data-id="{{ post.id }}">Delete Post</button>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No posts available.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Navigation buttons: Create New Post, Settings, and Home -->
+        <div class="nav-buttons">
+            <a href="{{ url_for('create_post') }}">Create New Post</a>
+            <a href="{{ url_for('settings') }}">Settings</a>
+            <a href="{{ url_for('home') }}">Home</a>  <!-- Home button -->
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('.delete-button').click(function() {
+                const postId = $(this).data('id');
+                if (confirm('Are you sure you want to delete this post?')) {
+                    $.post(`/delete_post/${postId}`, function(response) {
+                        if (response.success) {
+                            $(`#post-${postId}`).remove();  // Remove the post from the DOM
+                            alert(response.message);
+                        } else {
+                            alert('Error deleting the post.');
+                        }
+                    }).fail(function() {
+                        alert('Error deleting the post.');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
