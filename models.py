@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime
 from flask_login import UserMixin
 
+
 class DB:
     def __init__(self, db_path):
         self.conn = sqlite3.connect(db_path)
@@ -25,7 +26,7 @@ class User(UserMixin):
 
     @classmethod
     def get_user_by_email(cls, email, db):
-        db.cursor.execute("SELECT * FROM user WHERE email = ?", (email,))
+        db.cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user_data = db.cursor.fetchone()
         if user_data:
             return cls(*user_data)
@@ -33,14 +34,14 @@ class User(UserMixin):
 
     @classmethod
     def create_user(cls, username, email, password, db):
-        db.cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-        existing_user = db.cursor.fetchone()
+        existing_user = cls.get_user_by_email(email, db)
         if existing_user:
             raise ValueError("Email already exists")
         
         db.cursor.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
                           (username, email, password))
         db.commit()
+        return cls.get_user_by_email(email, db)
 
 
 class Post:
@@ -53,9 +54,18 @@ class Post:
 
     @classmethod
     def create_post(cls, content, image, user_id, db):
-        db.cursor.execute("INSERT INTO post (content, image, user_id) VALUES (?, ?, ?)",
+        db.cursor.execute("INSERT INTO posts (content, image, user_id) VALUES (?, ?, ?)",
                           (content, image, user_id))
         db.commit()
+        return cls.get_post_by_id(db.cursor.lastrowid, db)
+
+    @classmethod
+    def get_post_by_id(cls, post_id, db):
+        db.cursor.execute("SELECT * FROM posts WHERE id = ?", (post_id,))
+        post_data = db.cursor.fetchone()
+        if post_data:
+            return cls(*post_data)
+        return None
 
 
 class Chat:
@@ -68,9 +78,18 @@ class Chat:
 
     @classmethod
     def send_chat(cls, sender_id, receiver_id, message, db):
-        db.cursor.execute("INSERT INTO chat (sender_id, receiver_id, message) VALUES (?, ?, ?)",
+        db.cursor.execute("INSERT INTO chats (sender_id, receiver_id, message) VALUES (?, ?, ?)",
                           (sender_id, receiver_id, message))
         db.commit()
+        return cls.get_chat_by_id(db.cursor.lastrowid, db)
+
+    @classmethod
+    def get_chat_by_id(cls, chat_id, db):
+        db.cursor.execute("SELECT * FROM chats WHERE id = ?", (chat_id,))
+        chat_data = db.cursor.fetchone()
+        if chat_data:
+            return cls(*chat_data)
+        return None
 
 
 class Notification:
@@ -84,9 +103,18 @@ class Notification:
 
     @classmethod
     def create_notification(cls, content, user_id, post_id, notification_type, db):
-        db.cursor.execute("INSERT INTO notification (content, user_id, post_id, notification_type) VALUES (?, ?, ?, ?)",
+        db.cursor.execute("INSERT INTO notifications (content, user_id, post_id, notification_type) VALUES (?, ?, ?, ?)",
                           (content, user_id, post_id, notification_type))
         db.commit()
+        return cls.get_notification_by_id(db.cursor.lastrowid, db)
+
+    @classmethod
+    def get_notification_by_id(cls, notification_id, db):
+        db.cursor.execute("SELECT * FROM notifications WHERE id = ?", (notification_id,))
+        notification_data = db.cursor.fetchone()
+        if notification_data:
+            return cls(*notification_data)
+        return None
 
 
 class Like:
@@ -97,16 +125,28 @@ class Like:
 
     @classmethod
     def like_post(cls, user_id, post_id, db):
+        existing_like = cls.get_like_by_user_and_post(user_id, post_id, db)
+        if existing_like:
+            raise ValueError("Already liked")
+        
         db.cursor.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)",
                           (user_id, post_id))
         db.commit()
+        return cls.get_like_by_user_and_post(user_id, post_id, db)
+
+    @classmethod
+    def get_like_by_user_and_post(cls, user_id, post_id, db):
+        db.cursor.execute("SELECT * FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id))
+        like_data = db.cursor.fetchone()
+        if like_data:
+            return cls(*like_data)
+        return None
 
 
-# Create tables
 def create_tables(db_path):
     db = DB(db_path)
     db.cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS user (
+        CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             email TEXT UNIQUE NOT NULL,
@@ -115,34 +155,34 @@ def create_tables(db_path):
             profile_pic TEXT
         );
         
-        CREATE TABLE IF NOT EXISTS post (
+        CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             image TEXT,
             likes_count INTEGER DEFAULT 0,
             user_id INTEGER,
-            FOREIGN KEY (user_id) REFERENCES user (id)
+            FOREIGN KEY (user_id) REFERENCES users (id)
         );
         
-        CREATE TABLE IF NOT EXISTS chat (
+        CREATE TABLE IF NOT EXISTS chats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
             message TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (sender_id) REFERENCES user (id),
-            FOREIGN KEY (receiver_id) REFERENCES user (id)
+            FOREIGN KEY (sender_id) REFERENCES users (id),
+            FOREIGN KEY (receiver_id) REFERENCES users (id)
         );
         
-        CREATE TABLE IF NOT EXISTS notification (
+        CREATE TABLE IF NOT EXISTS notifications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             content TEXT NOT NULL,
             user_id INTEGER NOT NULL,
             post_id INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             notification_type TEXT,
-            FOREIGN KEY (user_id) REFERENCES user (id),
-            FOREIGN KEY (post_id) REFERENCES post (id)
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id)
         );
         
         CREATE TABLE IF NOT EXISTS likes (
@@ -150,8 +190,8 @@ def create_tables(db_path):
             user_id INTEGER NOT NULL,
             post_id INTEGER NOT NULL,
             UNIQUE (user_id, post_id),
-            FOREIGN KEY (user_id) REFERENCES user (id),
-            FOREIGN KEY (post_id) REFERENCES post (id)
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id)
         );
         """)
     db.commit()
@@ -168,15 +208,15 @@ db = DB(db_path)
 user = User.create_user('john_doe', 'john@example.com', 'password123', db)
 
 # Create post
-post = Post.create_post('Hello, world!', None, 1, db)
+post = Post.create_post('Hello, world!', None, user.id, db)
 
 # Send chat
-chat = Chat.send_chat(1, 2, 'Hello!', db)
+chat = Chat.send_chat(user.id, 2, 'Hello!', db)
 
 # Create notification
-notification = Notification.create_notification('New like!', 1, 1, 'like', db)
+notification = Notification.create_notification('New like!', user.id, post.id, 'like', db)
 
 # Like post
-like = Like.like_post(1, 1, db)
+like = Like.like_post(user.id, post.id, db)
 
 db.close()
