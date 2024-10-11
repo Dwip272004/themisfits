@@ -54,12 +54,12 @@ class User(UserMixin):
             db.commit()
             return existing_user
         return None
-    @classmethod
-    def get_user_by_id(cls, user_id, db):
+    @staticmethod
+    def get_user_by_id(user_id, db):
         db.cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user_data = db.cursor.fetchone()
         if user_data:
-            return cls(*user_data)
+            return User(*user_data)
         return None
 
 class Post:

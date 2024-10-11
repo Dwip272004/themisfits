@@ -85,8 +85,10 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get_user_by_email(user_id, DB(app.config['DATABASE']))
-
+    db = DB(app.config['DATABASE'])
+    user = User.get_user_by_id(user_id, db)
+    db.close()
+    return user
 
 # Rest of your routes and functions...
 login_manager = LoginManager(app)
