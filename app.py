@@ -6,6 +6,7 @@ import os
 import sqlite3
 from models import User, Post, Chat, Notification, Like
 from config import Config
+from forms import RegistrationForm, LoginForm, ChangePasswordForm, EditProfileForm
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -43,6 +44,7 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    form = LoginForm()
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -53,11 +55,12 @@ def login():
             login_user(user)
             return redirect(url_for('home'))
         flash('Invalid credentials', 'danger')
-    return render_template('login.html')
+    return render_template('login.html',form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    form = RegistrationForm()
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
@@ -71,7 +74,7 @@ def register():
         db.close()
         flash('Registration successful!', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('register.html',form=form)
 
 
 @app.route('/home')
@@ -122,6 +125,7 @@ def profile(user_id):
 @app.route('/edit_profile/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 def edit_profile(user_id):
+    form = EditProfileForm()
     db = DB(app.config['DATABASE'])
     user = User.get_user_by_id(user_id, db)
     db.close()
@@ -136,7 +140,7 @@ def edit_profile(user_id):
         db.close()
         flash('Profile updated successfully!', 'success')
         return redirect(url_for('profile', user_id=user.id))
-    return render_template('edit_profile.html', user=user)
+    return render_template('edit_profile.html', user=user,form = form)
 
 
 @app.route('/find_friend', methods=['GET'])
@@ -189,6 +193,7 @@ def logout():
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
 def change_password():
+    form = ChangePasswordForm()
     if request.method == 'POST':
         current_password = request.form['current_password']
         new_password = request.form['new_password']
@@ -205,7 +210,7 @@ def change_password():
         db.close()
         flash('Your password has been updated successfully.', 'success')
         return redirect(url_for('settings'))
-    return render_template('change_password.html')
+    return render_template('change_password.html',form=form)
 
 
 @app.route('/create_post', methods=['GET', 'POST'])
