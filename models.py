@@ -1,57 +1,179 @@
-from db import db
-from flask_login import UserMixin
+import sqlite3
 from datetime import datetime
+from flask_login import UserMixin
+
+class DB:
+    def __init__(self, db_path):
+        self.conn = sqlite3.connect(db_path)
+        self.cursor = self.conn.cursor()
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
 
 
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False, unique=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    bio = db.Column(db.String(200))
-    profile_pic = db.Column(db.String(200))
+class User(UserMixin):
+    def __init__(self, id, username, email, password, bio=None, profile_pic=None):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.password = password
+        self.bio = bio
+        self.profile_pic = profile_pic
 
-    # Relationships
-    posts = db.relationship('Post', backref='author', lazy=True)
-    sent_chats = db.relationship('Chat', foreign_keys='Chat.sender_id', backref='sender', lazy=True)
-    received_chats = db.relationship('Chat', foreign_keys='Chat.receiver_id', backref='receiver', lazy=True)
-    notifications = db.relationship('Notification', backref='notifier', lazy=True)
-    likes = db.relationship('Like', backref='liker', lazy=True)
+    @classmethod
+    def get_user_by_email(cls, email, db):
+        db.cursor.execute("SELECT * FROM user WHERE email = ?", (email,))
+        user_data = db.cursor.fetchone()
+        if user_data:
+            return cls(*user_data)
+        return None
 
-
-class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    image = db.Column(db.String(200))
-    likes_count = db.Column(db.Integer, default=0)
-
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    likes = db.relationship('Like', backref='liked_post', lazy=True)
+    @classmethod
+    def create_user(cls, username, email, password, db):
+        db.cursor.execute("INSERT INTO user (username, email, password) VALUES (?, ?, ?)",
+                          (username, email, password))
+        db.commit()
 
 
-class Chat(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class Post:
+    def __init__(self, id, content, image=None, likes_count=0, user_id=None):
+        self.id = id
+        self.content = content
+        self.image = image
+        self.likes_count = likes_count
+        self.user_id = user_id
+
+    @classmethod
+    def create_post(cls, content, image, user_id, db):
+        db.cursor.execute("INSERT INTO post (content, image, user_id) VALUES (?, ?, ?)",
+                          (content, image, user_id))
+        db.commit()
 
 
-class Notification(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(255), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    notification_type = db.Column(db.String(50))
+class Chat:
+    def __init__(self, id, sender_id, receiver_id, message, created_at=None):
+        self.id = id
+        self.sender_id = sender_id
+        self.receiver_id = receiver_id
+        self.message = message
+        self.created_at = created_at or datetime.utcnow()
 
-    post = db.relationship('Post', backref='post_notifications', lazy=True)
+    @classmethod
+    def send_chat(cls, sender_id, receiver_id, message, db):
+        db.cursor.execute("INSERT INTO chat (sender_id, receiver_id, message) VALUES (?, ?, ?)",
+                          (sender_id, receiver_id, message))
+        db.commit()
 
 
-class Like(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+class Notification:
+    def __init__(self, id, content, user_id, post_id=None, created_at=None, notification_type=None):
+        self.id = id
+        self.content = content
+        self.user_id = user_id
+        self.post_id = post_id
+        self.created_at = created_at or datetime.utcnow()
+        self.notification_type = notification_type
 
-    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
+    @classmethod
+    def create_notification(cls, content, user_id, post_id, notification_type, db):
+        db.cursor.execute("INSERT INTO notification (content, user_id, post_id, notification_type) VALUES (?, ?, ?, ?)",
+                          (content, user_id, post_id, notification_type))
+        db.commit()
+
+
+class Like:
+    def __init__(self, id, user_id, post_id):
+        self.id = id
+        self.user_id = user_id
+        self.post_id = post_id
+
+    @classmethod
+    def like_post(cls, user_id, post_id, db):
+        db.cursor.execute("INSERT INTO like_post (user_id, post_id) VALUES (?, ?)",
+                          (user_id, post_id))
+        db.commit()
+
+
+# Create tables
+def create_tables(db_path):
+    db = DB(db_path)
+    db.cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS user (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            bio TEXT,
+            profile_pic TEXT
+        );
+        
+        CREATE TABLE IF NOT EXISTS post (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            image TEXT,
+            likes_count INTEGER DEFAULT 0,
+            user_id INTEGER,
+            FOREIGN KEY (user_id) REFERENCES user (id)
+        );
+        
+        CREATE TABLE IF NOT EXISTS chat (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER NOT NULL,
+            receiver_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sender_id) REFERENCES user (id),
+            FOREIGN KEY (receiver_id) REFERENCES user (id)
+        );
+        
+        CREATE TABLE IF NOT EXISTS notification (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            post_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            notification_type TEXT,
+            FOREIGN KEY (user_id) REFERENCES user (id),
+            FOREIGN KEY (post_id) REFERENCES post (id)
+        );
+        
+        CREATE TABLE IF NOT EXISTS like_post (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            post_id INTEGER NOT NULL,
+            UNIQUE (
+                                        user_id INTEGER NOT NULL,
+            post_id INTEGER NOT NULL,
+            UNIQUE (user_id, post_id),
+            FOREIGN KEY (user_id) REFERENCES user (id),
+            FOREIGN KEY (post_id) REFERENCES post (id)
+        );""")
+    db.commit()
+    db.close()
+
+
+# Example usage
+db_path = 'misfits.db'
+create_tables(db_path)
+
+db = DB(db_path)
+
+# Create user
+user = User.create_user('john_doe', 'john@example.com', 'password123', db)
+
+# Create post
+post = Post.create_post('Hello, world!', None, 1, db)
+
+# Send chat
+chat = Chat.send_chat(1, 2, 'Hello!', db)
+
+# Create notification
+notification = Notification.create_notification('New like!', 1, 1, 'like', db)
+
+# Like post
+like = Like.like_post(1, 1, db)
+
+db.close()

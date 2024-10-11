@@ -7,7 +7,7 @@ services:
     startCommand: 
       - python app.py
     preDeployCommand: 
-      - python migrate.py
+      - python init_db.py
     envVars:
       - key: FLASK_ENV
         value: production
@@ -15,8 +15,8 @@ services:
         value: 'iamdwip'
       - key: UPLOAD_FOLDER
         value: 'uploads'
-      - key: DATABASE_URL
-        value: 'sqlite:///persistent/misfits.db'
+      - key: DATABASE
+        value: /persistent/misfits.db
       - key: FLASK_APP
         value: app.py
     staticPublishPath: static
