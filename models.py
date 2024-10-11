@@ -92,7 +92,7 @@ class Like:
 
     @classmethod
     def like_post(cls, user_id, post_id, db):
-        db.cursor.execute("INSERT INTO like_post (user_id, post_id) VALUES (?, ?)",
+        db.cursor.execute("INSERT INTO likes (user_id, post_id) VALUES (?, ?)",
                           (user_id, post_id))
         db.commit()
 
@@ -145,10 +145,10 @@ def create_tables(db_path):
             user_id INTEGER NOT NULL,
             post_id INTEGER NOT NULL,
             UNIQUE (user_id, post_id),
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (post_id) REFERENCES posts (id)
+            FOREIGN KEY (user_id) REFERENCES user (id),
+            FOREIGN KEY (post_id) REFERENCES post (id)
         );
-        );""")
+        """)
     db.commit()
     db.close()
 
