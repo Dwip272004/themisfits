@@ -140,16 +140,14 @@ def create_tables(db_path):
             FOREIGN KEY (post_id) REFERENCES post (id)
         );
         
-        CREATE TABLE IF NOT EXISTS like_post (
+        CREATE TABLE IF NOT EXISTS likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             post_id INTEGER NOT NULL,
-            UNIQUE (
-                                        user_id INTEGER NOT NULL,
-            post_id INTEGER NOT NULL,
             UNIQUE (user_id, post_id),
-            FOREIGN KEY (user_id) REFERENCES user (id),
-            FOREIGN KEY (post_id) REFERENCES post (id)
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id)
+        );
         );""")
     db.commit()
     db.close()
