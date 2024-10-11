@@ -130,10 +130,12 @@ def login():
         db.close()
         if user and check_password_hash(user.password, password):
             login_user(user)
+            next_url = request.args.get('next')
+            if next_url and next_url != request.url:
+                return redirect(next_url)
             return redirect(url_for('home'))
         flash('Invalid credentials', 'danger')
-    return render_template('login.html',form=form)
-
+    return render_template('login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
