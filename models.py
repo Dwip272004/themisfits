@@ -33,7 +33,12 @@ class User(UserMixin):
 
     @classmethod
     def create_user(cls, username, email, password, db):
-        db.cursor.execute("INSERT INTO user (username, email, password) VALUES (?, ?, ?)",
+        db.cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        existing_user = db.cursor.fetchone()
+        if existing_user:
+            raise ValueError("Email already exists")
+        
+        db.cursor.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
                           (username, email, password))
         db.commit()
 
