@@ -1,11 +1,11 @@
-
-from app import db
+from db import db
 from flask_login import UserMixin
 from datetime import datetime
 
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)
+    username = db.Column(db.String(80), nullable=False, unique=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.String(200))
@@ -23,12 +23,11 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     image = db.Column(db.String(200))
-    likes_count = db.Column(db.Integer, default=0)  # Likes count initialized to 0
+    likes_count = db.Column(db.Integer, default=0)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Relationship for likes with backref for consistency
-    likes = db.relationship('Like', backref='liked_post', lazy=True)  # Removed overlap
+    likes = db.relationship('Like', backref='liked_post', lazy=True)
 
 
 class Chat(db.Model):
@@ -36,29 +35,23 @@ class Chat(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
-
-    # Sender and receiver relationships are defined by the backref 'sender' and 'receiver' in User
-    # No need for redundant overlaps or extra backrefs
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(255), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)  # Optional, notifications not always tied to posts
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    notification_type = db.Column(db.String(50))  # e.g., 'friend_request', 'like', etc.
+    notification_type = db.Column(db.String(50))
 
-    # Relationships
-    post = db.relationship('Post', backref='post_notifications', lazy=True)  # Modified backref to avoid naming confusion
+    post = db.relationship('Post', backref='post_notifications', lazy=True)
 
 
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
-    # Unique constraint to ensure a user can only like a post once
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
-
-    # Relationships for easier access (backrefs handled in Post and User models)
