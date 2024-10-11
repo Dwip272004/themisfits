@@ -9,7 +9,7 @@ from config import Config
 from forms import RegistrationForm, LoginForm, ChangePasswordForm, EditProfileForm
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 app.config.from_object(Config)
 app.config['SECRET_KEY'] = 'iamdwip'
 app.config['DATABASE'] = 'misfits.db'
