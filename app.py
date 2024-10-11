@@ -4,9 +4,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
 import sqlite3
-from models import User, Post, Chat, Notification, Like
+from models import User, Post, Chat, Notification, Like, DB
 from config import Config
 from forms import RegistrationForm, LoginForm, ChangePasswordForm, EditProfileForm
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -14,6 +15,80 @@ app.config['SECRET_KEY'] = 'iamdwip'
 app.config['DATABASE'] = 'misfits.db'
 
 
+# Create tables if they don't exist
+def create_tables():
+    db = DB(app.config['DATABASE'])
+    db.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            bio TEXT,
+            profile_pic TEXT
+        )
+    ''')
+
+    db.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            image_filename TEXT,
+            user_id INTEGER,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    db.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender_id INTEGER,
+            receiver_id INTEGER,
+            message_content TEXT NOT NULL,
+            FOREIGN KEY (sender_id) REFERENCES users (id),
+            FOREIGN KEY (receiver_id) REFERENCES users (id)
+        )
+    ''')
+
+    db.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT NOT NULL,
+            user_id INTEGER,
+            post_id INTEGER,
+            type TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id)
+        )
+    ''')
+
+    db.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS likes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            post_id INTEGER,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id)
+        )
+    ''')
+
+    db.commit()
+    db.close()
+
+
+create_tables()
+
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get_user_by_email(user_id, DB(app.config['DATABASE']))
+
+
+# Rest of your routes and functions...
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
