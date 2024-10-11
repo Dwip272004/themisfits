@@ -16,11 +16,11 @@ services:
       - key: UPLOAD_FOLDER
         value: 'uploads'
       - key: DATABASE_URL
-        value: 'sqlite:///misfits.db'
+        value: 'sqlite:///persistent/misfits.db'
       - key: FLASK_APP
         value: app.py
     staticPublishPath: static
     autoDeploy: true
     disk:
-      - mountPath: /persistent/uploads
+      - mountPath: /persistent
         sizeGB: 1
