@@ -42,7 +42,25 @@ class User(UserMixin):
                           (username, email, password))
         db.commit()
         return cls.get_user_by_email(email, db)
-
+    @classmethod
+    def update_user(cls, user_id, username, email, password, db):
+        existing_user = cls.get_user_by_id(user_id, db)
+        if existing_user:
+            existing_user.username = username
+            existing_user.email = email
+            existing_user.password = password
+            db.cursor.execute("UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?",
+                              (existing_user.username, existing_user.email, existing_user.password, existing_user.id))
+            db.commit()
+            return existing_user
+        return None
+    @classmethod
+    def get_user_by_id(cls, user_id, db):
+        db.cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        user_data = db.cursor.fetchone()
+        if user_data:
+            return cls(*user_data)
+        return None
 
 class Post:
     def __init__(self, id, content, image=None, likes_count=0, user_id=None):
@@ -197,26 +215,3 @@ def create_tables(db_path):
     db.commit()
     db.close()
 
-
-# Example usage
-db_path = 'misfits.db'
-create_tables(db_path)
-
-db = DB(db_path)
-
-# Create user
-user = User.create_user('john_doe', 'john@example.com', 'password123', db)
-
-# Create post
-post = Post.create_post('Hello, world!', None, user.id, db)
-
-# Send chat
-chat = Chat.send_chat(user.id, 2, 'Hello!', db)
-
-# Create notification
-notification = Notification.create_notification('New like!', user.id, post.id, 'like', db)
-
-# Like post
-like = Like.like_post(user.id, post.id, db)
-
-db.close()
