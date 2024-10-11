@@ -54,4 +54,8 @@ class Like(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
+<<<<<<< HEAD
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
+=======
+    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_uc'),)
+>>>>>>> ce476617c14f7e08fc958afd74510ff9685b921a
